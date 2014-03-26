@@ -1,0 +1,23 @@
+{
+  "name": "metro-jsapi",
+  "version": "0.0.0",
+  "description": "",
+  "main": "metro.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ymaps/metro-jsapi.git"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/ymaps/metro-jsapi/issues"
+  },
+  "dependencies": {
+    "metro-data": "git://github.yandex-team.ru/dodev/metro-data.git",
+    "chai": "~1.9.1",
+    "mocha": "~1.18.2"
+  }
+}
