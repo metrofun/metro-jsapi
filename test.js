@@ -18,8 +18,8 @@ ymaps.ready(function () {
     describe('TransportMap', function () {
         var map = document.createElement('div'), transportMap;
 
-        map.style.width = '500px';
-        map.style.height = '500px';
+        map.style.width = '900px';
+        map.style.height = '900px';
 
         document.body.appendChild(map);
 
