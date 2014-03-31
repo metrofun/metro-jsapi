@@ -19,25 +19,54 @@ ymaps.ready(function () {
     function TransportMap(city, container, state, options) {
         this._schemeId = this._schemeIdByCity[city];
         this._options = ymaps.util.extend({
-            path: '/node_modules/metro-data/'
+            path: '/node_modules/metro-data/',
+            minZoom: 0,
+            maxZoom: 3
         }, options);
-
-        this._container = container;
-        this._map = this._createMap();
+        this._state = ymaps.util.extend({
+            zoom: 0,
+            center: [0, 0],
+            shaded: false,
+            selection: []
+        }, state);
+        if (typeof container === 'string') {
+            this._container = document.getElementById(container);
+        } else {
+            this._container = container;
+        }
 
         //NOTE promise is returned from constructor
         return this._loadScheme().then(function (node) {
             this._schemeView = new SchemeView(node);
 
+            this._map = this._createMap();
+            if (this._state.shaded) {
+                this.shade();
+            }
             this._map.layers.add(new SchemeLayer(this._schemeView));
 
             return this;
         }.bind(this), function (e) {throw e; });
     }
     TransportMap.prototype = {
+        shade: function () {
+            this._schemeView.fadeIn();
+        },
+        unshade: function () {
+            this._schemeView.fadeOut();
+        },
         /**
-        * @returns {Number}
-        */
+         * @returns {Array<Number>} point in an abstract map coordinates
+         */
+        getCenter: function () {
+            return this._map.getCenter();
+        },
+        setCenter: function () {
+            return this._map.setCenter.apply(this._map, arguments);
+        },
+        /**
+         * @returns {Number}
+         */
         getSchemeId: function () {
             return this._schemeId;
         },
@@ -49,13 +78,13 @@ ymaps.ready(function () {
             minsk: 13
         },
         /**
-        * Loads an svg scheme
-        * and returns promise that provides an SVGElement
-        *
-        * TODO implement i18n
-        *
-        * @returns {ymaps.vow.Promise}
-        */
+         * Loads an svg scheme
+         * and returns promise that provides an SVGElement
+         *
+         * TODO implement i18n
+         *
+         * @returns {ymaps.vow.Promise}
+         */
         _loadScheme: function () {
             var domParser, node,
             xhr = new XMLHttpRequest(),
@@ -86,39 +115,46 @@ ymaps.ready(function () {
             return deferred.promise();
         },
         _createMap: function () {
-            var GEO_BOUND = 1024;
+            var SQUARE_SIZE = 1, map;
 
-            return new ymaps.Map(
+            map = new ymaps.Map(
                 this._container,
                 {
                     behaviors: ['drag', 'scrollZoom', 'multiTouch'],
                     controls: [],
-                    type: null,
-                    center: [0, 0],
-                    zoom: 2
+                    center: this._state.center,
+                    zoom: this._state.zoom
                 },
                 {
-                    maxZoom: 3,
-                    minZoom: 1,
+                    minZoom: this._options.minZoom,
+                    maxZoom: this._options.maxZoom,
                     autoFitToViewport: 'always',
                     avoidFractionalZoom: false,
+                    restrictMapArea: [
+                        [-SQUARE_SIZE, SQUARE_SIZE],
+                        [SQUARE_SIZE, -SQUARE_SIZE]
+                    ],
                     projection: new ymaps.projection.Cartesian([
-                        [GEO_BOUND, 0],
-                        [0, GEO_BOUND]
+                        [SQUARE_SIZE, 0],
+                        [0, SQUARE_SIZE]
                     ])
                 }
             );
+            return map;
+        },
+        destroy: function () {
+            this._map.destroy();
         }
     };
 
-    ymaps.createTransportMap = function (alias, container) {
-        return new TransportMap(alias, container);
+    ymaps.createTransportMap = function (alias, container, state, options) {
+        return new TransportMap(alias, container, state, options);
     };
 
     /**
      * Creates a layer with a scheme,
      * that should be added to the map.
-     * Proxies events from map to the SchemeView
+     * Proxies events from a map to the SchemeView
      *
      * @constructor
      * @inherits ymaps.collection.Item
@@ -144,6 +180,29 @@ ymaps.ready(function () {
                 right: BOUNDS
             });
         },
+        /**
+         * Translates an image scale into a map zoom
+         *
+         * @param {Number} zoom
+         *
+         * @returns {Number}
+         */
+        getScaleFromZoom: function (zoom) {
+            return Math.pow(2, zoom);
+        },
+        /**
+         * Translates a map zoom into an image scale
+         *
+         * @param {Number} zoom
+         *
+         * @returns {Number}
+         */
+        getZoomFromScale: function (scale) {
+            return Math.log(scale) * Math.LOG2E;
+        },
+        /**
+         * @override ymaps.collection.Item
+         */
         onAddToMap: function (map) {
             var ground;
             SchemeLayer.superclass.onAddToMap.call(this, map);
@@ -152,12 +211,14 @@ ymaps.ready(function () {
             map.events.add('actiontick', function (e) {
                 var tick = e.get('tick');
 
-                this._schemeView.setTranslate(-tick.globalPixelCenter[0], -tick.globalPixelCenter[1]);
-                // TODO hardcoded values of initials zoom
-                this._schemeView.setScale(Math.pow(2, tick.zoom - 2));
+                this._schemeView.setTranslate(tick.globalPixelCenter);
+                this._schemeView.setScale(this.getScaleFromZoom(tick.zoom));
             }.bind(this));
 
             this._schemeView.setBaseSize.apply(this._schemeView, map.container.getSize());
+            this._schemeView.setTranslate(map.getGlobalPixelCenter());
+            this._schemeView.setScale(this.getScaleFromZoom(map.getZoom()));
+
             ground = map.panes.get('ground').getElement();
             ground.parentNode.insertBefore(this._schemeView.getNode(), ground);
         }
@@ -178,6 +239,12 @@ ymaps.ready(function () {
         this._relativeScale = 1;
     }
     SchemeView.prototype = {
+        fadeOut: function () {
+            this._node.getElementById('scheme-layer').style.opacity = '';
+        },
+        fadeIn: function () {
+            this._node.getElementById('scheme-layer').style.opacity = 0.5;
+        },
         /*
          * Sets the base size of a scheme image.
          * Scaling will be relative to this size
@@ -200,11 +267,10 @@ ymaps.ready(function () {
          * Move an image.
          * Relative to the initial position
          *
-         * @param {Number} dx
-         * @param {Number} dy
+         * @param {Array} vector An array of dx and dy values
          */
-        setTranslate: function (dx, dy) {
-            var value = 'translate(' + dx + 'px,' + dy + 'px)';
+        setTranslate: function (vector) {
+            var value = 'translate(' + (-vector[0]) + 'px,' + (-vector[1]) + 'px)';
 
             ['-webkit-', '-moz-', '-ms-', '-o-', ''].forEach(function (prefix) {
                 this._node.style[prefix + 'transform'] = value;
