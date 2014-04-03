@@ -4,7 +4,7 @@
   "description": "",
   "main": "metro.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/mocha-phantomjs -s webSecurityEnabled=false test.html"
   },
   "repository": {
     "type": "git",
@@ -16,8 +16,11 @@
     "url": "https://github.com/ymaps/metro-jsapi/issues"
   },
   "dependencies": {
-    "metro-data": "git://github.com/ymaps/metro-data.git",
+    "metro-data": "git://github.com/ymaps/metro-data.git"
+  },
+  "devDependencies": {
+    "mocha": "~1.18.2",
     "chai": "~1.9.1",
-    "mocha": "~1.18.2"
+    "mocha-phantomjs": "~3.3.2"
   }
 }

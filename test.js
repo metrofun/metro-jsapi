@@ -68,6 +68,17 @@ ymaps.ready(function () {
                 transportMap.destroy();
             });
         });
+        it('should accept fractional zoom', function () {
+            var initialZoom = 1.3;
+
+            return ymaps.createTransportMap('moscow', map, {
+                zoom: initialZoom
+            }).then(function (transportMap) {
+                expect(transportMap.getZoom).to.be.an('function');
+                expect(transportMap.getZoom()).to.equal(initialZoom);
+                transportMap.destroy();
+            });
+        });
         it('should follow shade property', function () {
             // TODO How to draw an SVGElement into canvas?
         });
@@ -97,7 +108,34 @@ ymaps.ready(function () {
                 transportMap.destroy();
             });
         });
+        it('should implement getZoom', function () {
+            var initialZoom = 2.5;
+
+            return ymaps.createTransportMap('moscow', map, {
+                zoom: initialZoom
+            }).then(function (transportMap) {
+                expect(transportMap.getZoom()).to.equal(initialZoom);
+                transportMap.destroy();
+            });
+        });
+        it('should implement setZoom', function () {
+            var zoom = 2;
+
+            return ymaps.createTransportMap('moscow', map, {
+            }).then(function (transportMap) {
+                expect(transportMap.setZoom(zoom)).to.be.an.instanceof(ymaps.vow.Promise);
+
+                transportMap.setZoom(zoom).then(function () {
+                    expect(transportMap.getZoom()).to.equal(zoom);
+                });
+                transportMap.destroy();
+            });
+        });
     });
 
-    mocha.run();
+    if (window.mochaPhantomJS) {
+        mochaPhantomJS.run();
+    } else {
+        mocha.run();
+    }
 });

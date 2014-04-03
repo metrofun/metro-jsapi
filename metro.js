@@ -17,9 +17,11 @@ ymaps.ready(function () {
      * @param {Object} options Todo, is ignored
      */
     function TransportMap(city, container, state, options) {
+        var _this = this;
+
         this._schemeId = this._schemeIdByCity[city];
         this._options = ymaps.util.extend({
-            path: '/node_modules/metro-data/',
+            path: 'node_modules/metro-data/',
             minZoom: 0,
             maxZoom: 3
         }, options);
@@ -36,17 +38,17 @@ ymaps.ready(function () {
         }
 
         //NOTE promise is returned from constructor
-        return this._loadScheme().then(function (node) {
-            this._schemeView = new SchemeView(node);
+        return _this._loadScheme().then(function (node) {
+            _this._schemeView = new SchemeView(node);
 
-            this._map = this._createMap();
-            if (this._state.shaded) {
-                this.shade();
+            _this._map = _this._createMap();
+            if (_this._state.shaded) {
+                _this.shade();
             }
-            this._map.layers.add(new SchemeLayer(this._schemeView));
+            _this._map.layers.add(new SchemeLayer(_this._schemeView));
 
-            return this;
-        }.bind(this), function (e) {throw e; });
+            return _this;
+        }, function (e) {throw e; });
     }
     TransportMap.prototype = {
         shade: function () {
@@ -56,13 +58,48 @@ ymaps.ready(function () {
             this._schemeView.fadeOut();
         },
         /**
-         * @returns {Array<Number>} point in an abstract map coordinates
+         * Returns coordinates of center in abstract scheme coordinates
+         *
+         * @returns {Array<Number>}
          */
         getCenter: function () {
             return this._map.getCenter();
         },
+        /**
+         * Sets coordinates of center.
+         * Changing of a center position is async
+         *
+         * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/Map.xml#setCenter
+         *
+         * @param {Array<Number>} center
+         * @param {Number} [zoom]
+         * @param {Object} [options]
+         *
+         * @returns {Vow.Promise}
+         */
         setCenter: function () {
             return this._map.setCenter.apply(this._map, arguments);
+        },
+        /**
+         * Get a current map zoom
+         *
+         * @returns {Number}
+         */
+        getZoom: function () {
+            return this._map.getZoom();
+        },
+        /**
+         * Sets new zoom
+         *
+         * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/Map.xml#setZoom
+         *
+         * @param {Number} zoom
+         * @param {Object} [options]
+         *
+         * @returns {Vow.Promise}
+         */
+        setZoom: function () {
+            return this._map.setZoom.apply(this._map, arguments);
         },
         /**
          * @returns {Number}
