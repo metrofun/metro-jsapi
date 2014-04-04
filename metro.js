@@ -17,8 +17,6 @@ ymaps.ready(function () {
      * @param {Object} options Todo, is ignored
      */
     function TransportMap(city, container, state, options) {
-        var _this = this;
-
         this._schemeId = this._schemeIdByCity[city];
         this._options = ymaps.util.extend({
             path: 'node_modules/metro-data/',
@@ -38,19 +36,41 @@ ymaps.ready(function () {
         }
 
         //NOTE promise is returned from constructor
-        return _this._loadScheme().then(function (node) {
-            _this._schemeView = new SchemeView(node);
-
-            _this._map = _this._createMap();
-            if (_this._state.shaded) {
-                _this.shade();
-            }
-            _this._map.layers.add(new SchemeLayer(_this._schemeView));
-
-            return _this;
-        }, function (e) {throw e; });
+        return this._loadScheme().then(this._onSchemeLoad.bind(this), function (e) {throw e; });
     }
     TransportMap.prototype = {
+        _onSchemeLoad: function (node) {
+            this._schemeView = new SchemeView(node);
+            this._map = this._createMap();
+            if (this._state.shaded) {
+                this.shade();
+            }
+            this._map.layers.add(new SchemeLayer(this._schemeView));
+
+            this.stations = new StationCollection(this._schemeView, this._map);
+            this.select(this._state.selection);
+
+            return this;
+        },
+        select: function (codes) {
+            [].concat(codes).forEach(function (code) {
+                this.stations.getByCode(code).select();
+            }, this);
+        },
+        deselect: function (codes) {
+            [].concat(codes).forEach(function (code) {
+                this.stations.getByCode(code).deselect();
+            }, this);
+        },
+        getSelection: function () {
+            var codes = [];
+            this.stations.each(function (station) {
+                if (station.selected) {
+                    codes.push(station.code);
+                }
+            });
+            return codes;
+        },
         shade: function () {
             this._schemeView.fadeIn();
         },
@@ -167,10 +187,10 @@ ymaps.ready(function () {
                     maxZoom: this._options.maxZoom,
                     autoFitToViewport: 'always',
                     avoidFractionalZoom: false,
-                    restrictMapArea: [
-                        [-SQUARE_SIZE, SQUARE_SIZE],
-                        [SQUARE_SIZE, -SQUARE_SIZE]
-                    ],
+                    // restrictMapArea: [
+                        // [-SQUARE_SIZE, SQUARE_SIZE],
+                        // [SQUARE_SIZE, -SQUARE_SIZE]
+                    // ],
                     projection: new ymaps.projection.Cartesian([
                         [SQUARE_SIZE, 0],
                         [0, SQUARE_SIZE]
@@ -202,19 +222,18 @@ ymaps.ready(function () {
         SchemeLayer.superclass.constructor.call(this);
 
         this._schemeView = schemeView;
-        this._centerScheme();
     }
     ymaps.util.augment(SchemeLayer, ymaps.collection.Item, {
         _centerScheme: function () {
-            var BOUNDS = '-9999px';
+            var BOUNDS = -99999;
 
             ymaps.util.extend(this._schemeView.getNode().style, {
                 position: 'absolute',
                 margin: 'auto',
-                top: BOUNDS,
-                bottom: BOUNDS,
-                left: BOUNDS,
-                right: BOUNDS
+                top: BOUNDS + 'px',
+                bottom: BOUNDS  + 'px',
+                left: BOUNDS  + 'px',
+                right: BOUNDS  + 'px'
             });
         },
         /**
@@ -252,15 +271,15 @@ ymaps.ready(function () {
                 this._schemeView.setScale(this.getScaleFromZoom(tick.zoom));
             }.bind(this));
 
-            this._schemeView.setBaseSize.apply(this._schemeView, map.container.getSize());
+            this._schemeView.setBaseSize(256, 256);
             this._schemeView.setTranslate(map.getGlobalPixelCenter());
             this._schemeView.setScale(this.getScaleFromZoom(map.getZoom()));
+            this._centerScheme();
 
             ground = map.panes.get('ground').getElement();
             ground.parentNode.insertBefore(this._schemeView.getNode(), ground);
         }
     });
-
     /**
      * View on a scheme image.
      * Responsible for moving and scaling.
@@ -276,6 +295,18 @@ ymaps.ready(function () {
         this._relativeScale = 1;
     }
     SchemeView.prototype = {
+        getWidth: function () {
+            var scale = this._relativeScale * this._baseScale,
+                metadata = this.getMetaData();
+
+            return metadata.width * scale;
+        },
+        getHeight: function () {
+            var scale = this._relativeScale * this._baseScale,
+                metadata = this.getMetaData();
+
+            return metadata.height * scale;
+        },
         fadeOut: function () {
             this._node.getElementById('scheme-layer').style.opacity = '';
         },
@@ -307,7 +338,7 @@ ymaps.ready(function () {
          * @param {Array} vector An array of dx and dy values
          */
         setTranslate: function (vector) {
-            var value = 'translate(' + (-vector[0]) + 'px,' + (-vector[1]) + 'px)';
+            var value = 'translate(' + (- vector[0]) + 'px,' + (- vector[1]) + 'px)';
 
             ['-webkit-', '-moz-', '-ms-', '-o-', ''].forEach(function (prefix) {
                 this._node.style[prefix + 'transform'] = value;
@@ -358,6 +389,104 @@ ymaps.ready(function () {
                 width: (metadata.width * scale) + 'px',
                 height: (metadata.height * scale)  + 'px',
             });
+        }
+    };
+    function StationCollection(schemeView, ymap) {
+        var code, metadata = schemeView.getMetaData().stations;
+
+        this._stationsMap = {};
+        this._stations = [];
+
+        for (code in metadata) {
+            this._stationsMap[code] = new Station(metadata[code], schemeView, ymap);
+            this._stations.push(this._stationsMap[code]);
+        }
+    }
+    StationCollection.prototype = {
+        getByCode: function (code) {
+            return this._stationsMap[code];
+        },
+        each: function (callback, ctx) {
+            this._stations.forEach(function (station) {
+                callback.call(ctx || station, station);
+            });
+        }
+    };
+    function Station(metadata, schemeView, ymap) {
+        this.code = metadata.labelId;
+        this.title = metadata.name;
+        this._schemeView = schemeView;
+        this._ymap = ymap;
+        this.selected = false;
+        this.bind('click', this._onClick, this);
+    }
+    Station.prototype = {
+        _onClick: function () {
+            if (this.selected) {
+                this.deselect();
+            } else {
+                this.select();
+            }
+        },
+        /**
+         * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/Rectangle.xml#events-summary
+         */
+        bind: function (eventName, callback, ctx) {
+            this.getRectangle().events.add(eventName, callback, ctx);
+        },
+        /**
+         * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/Rectangle.xml#events-summary
+         */
+        unbind: function (eventName, callback, ctx) {
+            this.getRectangle().events.remove(eventName, callback, ctx);
+        },
+        getRectangle: function () {
+            if (!this._rectangle) {
+                this._rectangle = new ymaps.Rectangle(
+                    this._getRectangleBBox(),
+                    {},
+                    {fill: true, opacity: 0}
+                );
+                this._ymap.geoObjects.add(this._rectangle);
+            }
+            return this._rectangle;
+        },
+        _getRectangleBBox: function () {
+            var globalBBox = this.getLabelNode().getBBox(),
+                projection = this._ymap.options.get('projection'),
+                schemeMeta = this._schemeView.getMetaData(),
+                center = {x: schemeMeta.width / 2, y: schemeMeta.height / 2},
+                baseZoom = - Math.log(this._schemeView._baseScale) * Math.LOG2E,
+                topLeftPoint = projection.fromGlobalPixels([
+                    globalBBox.x - center.x,
+                    globalBBox.y - center.y
+                ], baseZoom),
+                bottomRightPoint = projection.fromGlobalPixels([
+                    globalBBox.x - center.x + globalBBox.width,
+                    globalBBox.y - center.y + globalBBox.height
+                ], baseZoom);
+
+            return [topLeftPoint, bottomRightPoint];
+        },
+        getLabelNode: function () {
+            if (!this._labelNode) {
+                this._labelNode = this._schemeView.getNode().getElementById('label-' + this.code);
+            }
+            return this._labelNode;
+        },
+        select: function () {
+            var rectNode = this.getLabelNode().getElementsByTagName('rect')[0];
+
+            this.selected = true;
+            rectNode.style.stroke = '#bbb';
+            rectNode.style.opacity = 1;
+        },
+        deselect: function () {
+            var rectNode = this.getLabelNode().getElementsByTagName('rect')[0];
+
+            this.selected = false;
+            rectNode.style.stroke = '';
+            rectNode.style.opacity = '';
         }
     };
 });
