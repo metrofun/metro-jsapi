@@ -14,7 +14,6 @@ ymaps.ready(function () {
         transportMap.deselect([182]);
     }).done();
 
-    return;
     chai.should();
     mocha.setup('bdd');
 
@@ -48,6 +47,30 @@ ymaps.ready(function () {
             otherArray
         );
     });
+
+    if (!Function.prototype.bind) {
+        Function.prototype.bind = function (oThis) {
+            if (typeof this !== "function") {
+                // closest thing possible to the ECMAScript 5 internal IsCallable function
+                throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
+            }
+
+            var aArgs = Array.prototype.slice.call(arguments, 1),
+                fToBind = this,
+                FNop = function () {},
+                fBound = function () {
+                    return fToBind.apply(this instanceof FNop && oThis
+                        ? this
+                        : oThis,
+                        aArgs.concat(Array.prototype.slice.call(arguments)));
+                };
+
+            FNop.prototype = this.prototype;
+            fBound.prototype = new FNop();
+
+            return fBound;
+        };
+    }
 
     describe('createTransportMap', function () {
         it('should exist', function () {
@@ -118,9 +141,9 @@ ymaps.ready(function () {
             // TODO How to draw an SVGElement into canvas?
         });
         it('should accept selection property', function () {
-            var initialSelection = randomUniqueDecimals(1, 10, 1, 100);
+            var initialSelection = randomUniqueDecimals(1, 10, 1, 20);
 
-            return ymaps.createTransportMap('moscow', mapContainer, {
+            return ymaps.createTransportMap('spb', mapContainer, {
                 selection: initialSelection
             }).then(function (transportMap) {
                 expect(transportMap.getSelection()).to.equalAsSets(initialSelection);
@@ -177,9 +200,9 @@ ymaps.ready(function () {
             });
         });
         it('should implement select', function () {
-            return ymaps.createTransportMap('moscow', mapContainer, {
+            return ymaps.createTransportMap('kharkov', mapContainer, {
             }).then(function (transportMap) {
-                var selection = randomUniqueDecimals(1, 10, 1, 100);
+                var selection = randomUniqueDecimals(1, 10, 1, 20);
 
                 expect(transportMap).to.respondTo('select');
                 transportMap.select(selection);

@@ -237,26 +237,6 @@ ymaps.ready(function () {
             });
         },
         /**
-         * Translates an image scale into a map zoom
-         *
-         * @param {Number} zoom
-         *
-         * @returns {Number}
-         */
-        getScaleFromZoom: function (zoom) {
-            return Math.pow(2, zoom);
-        },
-        /**
-         * Translates a map zoom into an image scale
-         *
-         * @param {Number} zoom
-         *
-         * @returns {Number}
-         */
-        getZoomFromScale: function (scale) {
-            return Math.log(scale) * Math.LOG2E;
-        },
-        /**
          * @override ymaps.collection.Item
          */
         onAddToMap: function (map) {
@@ -268,18 +248,40 @@ ymaps.ready(function () {
                 var tick = e.get('tick');
 
                 this._schemeView.setTranslate(tick.globalPixelCenter);
-                this._schemeView.setScale(this.getScaleFromZoom(tick.zoom));
+                this._schemeView.setScale(SchemeLayer.getScaleFromZoom(tick.zoom));
             }.bind(this));
+
 
             this._schemeView.setBaseSize(256, 256);
             this._schemeView.setTranslate(map.getGlobalPixelCenter());
-            this._schemeView.setScale(this.getScaleFromZoom(map.getZoom()));
+            this._schemeView.setScale(SchemeLayer.getScaleFromZoom(map.getZoom()));
             this._centerScheme();
 
             ground = map.panes.get('ground').getElement();
             ground.parentNode.insertBefore(this._schemeView.getNode(), ground);
         }
     });
+    /**
+     * Translates an image scale into a map zoom
+     *
+     * @param {Number} zoom
+     *
+     * @returns {Number}
+     */
+    SchemeLayer.getScaleFromZoom = function (zoom) {
+        return Math.pow(2, zoom);
+    };
+    /**
+     * Translates a map zoom into an image scale
+     *
+     * @param {Number} zoom
+     *
+     * @returns {Number}
+     */
+    SchemeLayer.getZoomFromScale = function (scale) {
+        return Math.log(scale) * Math.LOG2E;
+    };
+
     /**
      * View on a scheme image.
      * Responsible for moving and scaling.
@@ -313,10 +315,9 @@ ymaps.ready(function () {
         fadeIn: function () {
             this._node.getElementById('scheme-layer').style.opacity = 0.5;
         },
-        /*
+        /**
          * Sets the base size of a scheme image.
          * Scaling will be relative to this size
-         * TODO impelement mode
          *
          * @param {Number} width
          * @param {Number} height
@@ -330,6 +331,9 @@ ymaps.ready(function () {
             );
 
             this.setScale(this._relativeScale);
+        },
+        getBaseScale: function () {
+            return this._baseScale;
         },
         /**
          * Move an image.
@@ -456,7 +460,7 @@ ymaps.ready(function () {
                 projection = this._ymap.options.get('projection'),
                 schemeMeta = this._schemeView.getMetaData(),
                 center = {x: schemeMeta.width / 2, y: schemeMeta.height / 2},
-                baseZoom = - Math.log(this._schemeView._baseScale) * Math.LOG2E,
+                baseZoom = - SchemeLayer.getZoomFromScale(this._schemeView.getBaseScale()),
                 topLeftPoint = projection.fromGlobalPixels([
                     globalBBox.x - center.x,
                     globalBBox.y - center.y
