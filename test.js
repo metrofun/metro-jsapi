@@ -89,6 +89,7 @@ ymaps.ready(function () {
                 ymaps.createTransportMap('minsk', mapContainer)
             ]).spread(function (transportMap1, transportMap2) {
                 expect(transportMap1.getSchemeId()).not.to.equal(transportMap2.getSchemeId());
+
                 transportMap1.destroy();
                 transportMap2.destroy();
             });

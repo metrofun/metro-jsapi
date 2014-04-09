@@ -66,16 +66,12 @@ ymaps.ready(function () {
 
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4) {
-                    if (xhr.status === 200)  {
-                        domParser = new window.DOMParser();
-                        try {
-                            node = domParser.parseFromString(xhr.responseText, "text/xml");
-                            deferred.resolve(node.firstChild);
-                        } catch (e) {
-                            deferred.reject(e);
-                        }
-                    } else {
-                        deferred.reject(xhr.status);
+                    domParser = new window.DOMParser();
+                    try {
+                        node = domParser.parseFromString(xhr.responseText, "text/xml");
+                        deferred.resolve(node.firstChild);
+                    } catch (e) {
+                        deferred.reject(e);
                     }
                 }
             };

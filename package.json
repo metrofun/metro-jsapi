@@ -21,6 +21,7 @@
   "devDependencies": {
     "mocha": "~1.18.2",
     "chai": "~1.9.1",
-    "mocha-phantomjs": "~3.3.2"
+    "mocha-phantomjs": "~3.3.2",
+    "es5-shim": "~2.3.0"
   }
 }
