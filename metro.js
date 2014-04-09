@@ -424,6 +424,7 @@ ymaps.ready(function () {
     /**
      * Station manager.
      * Responsible for selection/delesection of stations
+     * Has an EventManager for listening for user events
      *
      * @constructor
      *
@@ -431,26 +432,41 @@ ymaps.ready(function () {
      * @param {ymap.Map} ymap
      */
     function StationCollection(schemeView, ymap) {
-        var code, metadata = schemeView.getMetaData().stations, station;
+        var code, _this = this,
+            metadata = schemeView.getMetaData().stations, station;
 
         this._stationsMap = {};
         this._stations = [];
 
+        // Event manager added
+        this.events = new ymaps.event.Manager({
+            context: this,
+            parent: ymaps.events
+        });
+
+        // "this" inside function refers to a Station instance
+        function onStationClick(e) {
+            var type = this.selected ? 'deselect':'select';
+
+            // call select/deselect on th Station instance
+            this[type]();
+
+            // fire event
+            _this.events.fire(type, _this.events.createEventObject({
+                type: type,
+                target: this,
+                event: e
+            }));
+        }
+
         for (code in metadata) {
             station = new Station(metadata[code], schemeView, ymap);
-            station.bind('click', this._onStationClick, station);
+            station.bind('click', onStationClick, station);
             this._stationsMap[code] = station;
             this._stations.push(station);
         }
     }
     StationCollection.prototype = {
-        _onStationClick: function () {
-            if (this.selected) {
-                this.deselect();
-            } else {
-                this.select();
-            }
-        },
         /**
          * Selects  stations by cods
          *

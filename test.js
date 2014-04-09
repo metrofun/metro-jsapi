@@ -224,6 +224,15 @@ ymaps.ready(function () {
     });
 
     describe('StationCollection instance', function () {
+        it('should have an EventManager', function () {
+            return ymaps.createTransportMap('moscow', mapContainer, {
+            }).then(function (transportMap) {
+                expect(transportMap.stations).to.have.a.property('events');
+                expect(transportMap.stations.events).to.be.instanceOf(ymaps.event.Manager);
+
+                transportMap.destroy();
+            });
+        });
         it('should implement getSelection', function () {
             var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
 
