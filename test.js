@@ -4,14 +4,14 @@ ymaps.ready(function () {
         mapContainer = document.createElement('div');
 
     mapContainer.id = 'mapContainer';
-    mapContainer.style.width = '400px';
-    mapContainer.style.height = '400px';
+    mapContainer.style.width = '512px';
+    mapContainer.style.height = '512px';
     document.body.appendChild(mapContainer);
 
     ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
-        transportMap.select([1, 2, 3, 4, 182]);
-        transportMap.getSelection();
-        transportMap.deselect([182]);
+        transportMap.stations.select([1, 2, 3, 4, 182]);
+        transportMap.stations.getSelection();
+        transportMap.stations.deselect([182]);
     }).done();
 
     chai.should();
@@ -137,6 +137,17 @@ ymaps.ready(function () {
                 transportMap.destroy();
             });
         });
+        it('should fit container if a zoom ommited', function () {
+            return ymaps.createTransportMap('moscow', mapContainer, {
+            }).then(function (transportMap) {
+                expect(transportMap.getZoom).to.be.an('function');
+                // container is 512x512 and a tile without zoom is 256x256
+                // so zoom must equal "1" o fit it
+                expect(transportMap.getZoom()).to.equal(1);
+                transportMap.destroy();
+            });
+        });
+
         it('should follow shade property', function () {
             // TODO How to draw an SVGElement into canvas?
         });
@@ -146,7 +157,7 @@ ymaps.ready(function () {
             return ymaps.createTransportMap('spb', mapContainer, {
                 selection: initialSelection
             }).then(function (transportMap) {
-                expect(transportMap.getSelection()).to.equalAsSets(initialSelection);
+                expect(transportMap.stations.getSelection()).to.equalAsSets(initialSelection);
                 transportMap.destroy();
             });
         });
@@ -192,10 +203,35 @@ ymaps.ready(function () {
             return ymaps.createTransportMap('moscow', mapContainer, {
             }).then(function (transportMap) {
                 expect(transportMap.setZoom(zoom)).to.be.an.instanceof(ymaps.vow.Promise);
-
                 transportMap.setZoom(zoom).then(function () {
                     expect(transportMap.getZoom()).to.equal(zoom);
                 });
+
+                transportMap.destroy();
+            });
+        });
+        it('should have "stations" property', function () {
+            return ymaps.createTransportMap('moscow', mapContainer, {
+            }).then(function (transportMap) {
+                expect(transportMap).to.have.a.property('stations');
+                expect(transportMap.stations).to.be.an('object');
+
+                transportMap.destroy();
+            });
+        });
+
+    });
+
+    describe('StationCollection instance', function () {
+        it('should implement getSelection', function () {
+            var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
+
+            return ymaps.createTransportMap('moscow', mapContainer, {
+                selection: initialSelection
+            }).then(function (transportMap) {
+                expect(transportMap.stations).to.respondTo('getSelection');
+                expect(transportMap.stations.getSelection()).to.equalAsSets(initialSelection);
+
                 transportMap.destroy();
             });
         });
@@ -204,9 +240,9 @@ ymaps.ready(function () {
             }).then(function (transportMap) {
                 var selection = randomUniqueDecimals(1, 10, 1, 20);
 
-                expect(transportMap).to.respondTo('select');
-                transportMap.select(selection);
-                expect(transportMap.getSelection()).to.equalAsSets(selection);
+                expect(transportMap.stations).to.respondTo('select');
+                transportMap.stations.select(selection);
+                expect(transportMap.stations.getSelection()).to.equalAsSets(selection);
 
                 transportMap.destroy();
             });
@@ -217,10 +253,53 @@ ymaps.ready(function () {
             return ymaps.createTransportMap('moscow', mapContainer, {
                 selection: randomUniqueDecimals(1, 10, 1, 10)
             }).then(function (transportMap) {
-                expect(transportMap).to.respondTo('deselect');
+                expect(transportMap.stations).to.respondTo('deselect');
 
-                transportMap.deselect(deselection);
-                expect(transportMap.getSelection()).to.not.have.members(deselection);
+                transportMap.stations.deselect(deselection);
+                expect(transportMap.stations.getSelection()).to.not.have.members(deselection);
+                transportMap.destroy();
+            });
+        });
+        it('should implement each', function () {
+            var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
+
+            return ymaps.createTransportMap('moscow', mapContainer, {
+                selection: initialSelection
+            }).then(function (transportMap) {
+                expect(transportMap.stations).to.respondTo('each');
+
+                transportMap.stations.each(function (station) {
+                    expect(station).to.be.an('object');
+                });
+
+                transportMap.destroy();
+            });
+        });
+    });
+    describe('Station instance', function () {
+        it('should have "code" property', function () {
+            var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
+
+            return ymaps.createTransportMap('moscow', mapContainer, {
+                selection: initialSelection
+            }).then(function (transportMap) {
+                transportMap.stations.each(function (station) {
+                    expect(station).to.have.property('code');
+                });
+
+                transportMap.destroy();
+            });
+        });
+        it('should have "title" property', function () {
+            var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
+
+            return ymaps.createTransportMap('moscow', mapContainer, {
+                selection: initialSelection
+            }).then(function (transportMap) {
+                transportMap.stations.each(function (station) {
+                    expect(station).to.have.property('title');
+                });
+
                 transportMap.destroy();
             });
         });
