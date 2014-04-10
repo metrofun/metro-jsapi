@@ -3,74 +3,14 @@ ymaps.ready(function () {
     var expect = chai.expect,
         mapContainer = document.createElement('div');
 
+    //create map container
     mapContainer.id = 'mapContainer';
     mapContainer.style.width = '512px';
     mapContainer.style.height = '512px';
     document.body.appendChild(mapContainer);
 
-    ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
-        transportMap.stations.select([1, 2, 3, 4, 182]);
-        transportMap.stations.getSelection();
-        transportMap.stations.deselect([182]);
-    }).done();
-
     chai.should();
     mocha.setup('bdd');
-
-    function randomDecimal(min, max) {
-        return min + Math.floor(Math.random() * (max - min));
-    }
-    function randomUniqueDecimals(minLength, maxLength, minValue, maxValue) {
-        var array = [], runner, id;
-
-        for (runner = randomDecimal(minLength, maxLength); runner; runner--) {
-            id = randomDecimal(minValue, maxValue);
-            if (array.indexOf(id) === -1) {
-                array.push(id);
-            }
-        }
-
-        return array;
-    }
-
-    chai.Assertion.addMethod('equalAsSets', function (otherArray) {
-        var array = this._obj;
-
-        expect(array).to.be.an.instanceOf(Array);
-        expect(otherArray).to.be.an.instanceOf(Array);
-        expect(array.length).to.equal(otherArray.length);
-
-        this.assert(
-            array.every(function (elem) {return ~otherArray.indexOf(elem); }),
-            "expected #{this} to be equal to #{exp} (as sets, i.e. no order)",
-            array,
-            otherArray
-        );
-    });
-
-    if (!Function.prototype.bind) {
-        Function.prototype.bind = function (oThis) {
-            if (typeof this !== "function") {
-                // closest thing possible to the ECMAScript 5 internal IsCallable function
-                throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
-            }
-
-            var aArgs = Array.prototype.slice.call(arguments, 1),
-                fToBind = this,
-                FNop = function () {},
-                fBound = function () {
-                    return fToBind.apply(this instanceof FNop && oThis
-                        ? this
-                        : oThis,
-                        aArgs.concat(Array.prototype.slice.call(arguments)));
-                };
-
-            FNop.prototype = this.prototype;
-            fBound.prototype = new FNop();
-
-            return fBound;
-        };
-    }
 
     describe('createTransportMap', function () {
         it('should exist', function () {
@@ -151,6 +91,33 @@ ymaps.ready(function () {
 
         it('should follow shade property', function () {
             // TODO How to draw an SVGElement into canvas?
+        });
+        it('should have an EventManager', function () {
+            return ymaps.createTransportMap('moscow', mapContainer, {
+            }).then(function (transportMap) {
+                expect(transportMap).to.have.a.property('events');
+                expect(transportMap.events).to.be.instanceOf(ymaps.event.Manager);
+
+                transportMap.destroy();
+            });
+        });
+        it('should fire "shadechange" on shade', function (done) {
+            ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+                transportMap.events.add('shadechange', function (e) {
+                    expect(e.get('type')).to.equal('shade');
+                    done();
+                });
+                transportMap.shade();
+            }).done();
+        });
+        it('should fire "shadechange" on unshade', function (done) {
+            ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+                transportMap.events.add('shadechange', function (e) {
+                    expect(e.get('type')).to.equal('unshade');
+                    done();
+                });
+                transportMap.unshade();
+            }).done();
         });
         it('should accept selection property', function () {
             var initialSelection = randomUniqueDecimals(1, 10, 1, 20);
@@ -245,6 +212,7 @@ ymaps.ready(function () {
         it('should fire "selectionchange" event on deselect', function (done) {
             ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
                 transportMap.stations.events.add('selectionchange', function (e) {
+                    console.log();
                     expect(e.get('type')).to.equal('deselect');
                     done();
                 });
@@ -332,6 +300,45 @@ ymaps.ready(function () {
             });
         });
     });
+
+    // Utils
+    function randomDecimal(min, max) {
+        return min + Math.floor(Math.random() * (max - min));
+    }
+    function randomUniqueDecimals(minLength, maxLength, minValue, maxValue) {
+        var array = [], runner, id;
+
+        for (runner = randomDecimal(minLength, maxLength); runner; runner--) {
+            id = randomDecimal(minValue, maxValue);
+            if (array.indexOf(id) === -1) {
+                array.push(id);
+            }
+        }
+
+        return array;
+    }
+
+    chai.Assertion.addMethod('equalAsSets', function (otherArray) {
+        var array = this._obj;
+
+        expect(array).to.be.an.instanceOf(Array);
+        expect(otherArray).to.be.an.instanceOf(Array);
+        expect(array.length).to.equal(otherArray.length);
+
+        this.assert(
+            array.every(function (elem) {return ~otherArray.indexOf(elem); }),
+            "expected #{this} to be equal to #{exp} (as sets, i.e. no order)",
+            array,
+            otherArray
+        );
+    });
+
+    //Example map
+    ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+        transportMap.stations.select([1, 2, 3, 4, 182]);
+        transportMap.stations.getSelection();
+        transportMap.stations.deselect([182]);
+    }).done();
 
     if (window.mochaPhantomJS) {
         mochaPhantomJS.run();

@@ -141,12 +141,14 @@ ymaps.ready(function () {
          */
         shade: function () {
             this._schemeView.fadeIn();
+            this.events.fire('shadechange', {type: 'shade', target: this});
         },
         /**
          * Fades out the map without animation
          */
         unshade: function () {
             this._schemeView.fadeOut();
+            this.events.fire('shadechange', {type: 'unshade', target: this});
         },
         /**
          * Returns coordinates of center in abstract scheme coordinates
