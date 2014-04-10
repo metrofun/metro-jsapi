@@ -9,6 +9,7 @@ ymaps.ready(function () {
      *
      * Exposes "StationCollection" via "stations" property
      *
+     *
      * Note: constructor returns a promise, not an instanceof TransportMap
      *
      * @constructor
@@ -48,7 +49,12 @@ ymaps.ready(function () {
         }
 
         //NOTE promise is returned from constructor
-        return this._loadScheme().then(this._onSchemeLoad.bind(this), function (e) {throw e; });
+        return this._loadScheme().then(
+            this._onSchemeLoad.bind(this),
+            function (e) {
+                setTimeout(function () {throw e; });
+            }
+        );
     }
     TransportMap.prototype = {
         /**
@@ -92,7 +98,12 @@ ymaps.ready(function () {
             }
             this._map.layers.add(new SchemeLayer(this._schemeView));
 
+            // Event manager added
+            this.events = new ymaps.event.Manager();
+
             this.stations = new StationCollection(this._schemeView, this._map);
+            // event bubbling
+            this.stations.events.setParent(this.events);
             this.stations.select(this._state.selection);
 
             return this;
@@ -423,8 +434,9 @@ ymaps.ready(function () {
 
     /**
      * Station manager.
-     * Responsible for selection/delesection of stations
-     * Has an EventManager for listening for user events
+     * Responsible for selection/deselection of stations
+     *
+     * Has an EventManager, which is a parent for all Stations' EventManagers
      *
      * @constructor
      *
@@ -432,36 +444,19 @@ ymaps.ready(function () {
      * @param {ymap.Map} ymap
      */
     function StationCollection(schemeView, ymap) {
-        var code, _this = this,
-            metadata = schemeView.getMetaData().stations, station;
+        var code, metadata = schemeView.getMetaData().stations, station;
 
         this._stationsMap = {};
         this._stations = [];
 
+
         // Event manager added
-        this.events = new ymaps.event.Manager({
-            context: this,
-            parent: ymaps.events
-        });
-
-        // "this" inside function refers to a Station instance
-        function onStationClick(e) {
-            var type = this.selected ? 'deselect':'select';
-
-            // call select/deselect on th Station instance
-            this[type]();
-
-            // fire event
-            _this.events.fire(type, _this.events.createEventObject({
-                type: type,
-                target: this,
-                event: e
-            }));
-        }
+        this.events = new ymaps.event.Manager();
 
         for (code in metadata) {
             station = new Station(metadata[code], schemeView, ymap);
-            station.bind('click', onStationClick, station);
+            // event bubbling
+            station.events.setParent(this.events);
             this._stationsMap[code] = station;
             this._stations.push(station);
         }
@@ -516,6 +511,10 @@ ymaps.ready(function () {
      * Station instance
      * Is exposed via StationCollection#each
      *
+     * Has an Event Manager, that fires custom event "selectionchange"
+     * For more events please see
+     * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/GeoObject.xml#events-summary
+     *
      * @constructor
      *
      * @param {Object} metadata Metadata for the station
@@ -528,8 +527,22 @@ ymaps.ready(function () {
         this._schemeView = schemeView;
         this._ymap = ymap;
         this.selected = false;
+
+        // Event manager added
+        this.events = new ymaps.event.Manager();
+
+        this._getGeoObjects().forEach(function (geoObject) {
+            // event bubbling
+            geoObject.events.setParent(this.events);
+        }, this);
+
+        this.events.add('click', this._onClick, this);
     }
     Station.prototype = {
+        _onClick: function () {
+            //toggle select
+            this[this.selected ? 'deselect':'select']();
+        },
         /**
          * Selects current station
          */
@@ -539,6 +552,8 @@ ymaps.ready(function () {
             this.selected = true;
             rectNode.style.stroke = '#bbb';
             rectNode.style.opacity = 1;
+
+            this.events.fire('selectionchange', {type: 'select', target: this});
         },
         /**
          * Deselects current station
@@ -549,36 +564,8 @@ ymaps.ready(function () {
             this.selected = false;
             rectNode.style.stroke = '';
             rectNode.style.opacity = '';
-        },
-        /**
-         * Subscribe to events on the geoObject
-         *
-         * For all events, please
-         * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/Rectangle.xml#events-summary
-         *
-         * @param {String} eventName
-         * @param {Function} callback
-         * @param {Object} ctx
-         */
-        bind: function (eventName, callback, ctx) {
-            this._getGeoObjects().forEach(function (geoObject) {
-                geoObject.events.add(eventName, callback, ctx);
-            });
-        },
-        /**
-         * Unsubscrive from receiving events
-         *
-         * For all events, please
-         * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/Rectangle.xml#events-summary
-         *
-         * @param {String} eventName
-         * @param {Function} callback
-         * @param {Object} ctx
-         */
-        unbind: function (eventName, callback, ctx) {
-            this._getGeoObjects().forEach(function (geoObject) {
-                geoObject.events.remove(eventName, callback, ctx);
-            });
+
+            this.events.fire('selectionchange', {type: 'deselect', target: this});
         },
         _createGeoObject: function (svgNode) {
             var rectangle = new ymaps.Rectangle(

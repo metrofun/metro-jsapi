@@ -233,6 +233,24 @@ ymaps.ready(function () {
                 transportMap.destroy();
             });
         });
+        it('should fire "selectionchange" event on select', function (done) {
+            ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+                transportMap.stations.events.add('selectionchange', function (e) {
+                    expect(e.get('type')).to.equal('select');
+                    done();
+                });
+                transportMap.stations.select([1]);
+            }).done();
+        });
+        it('should fire "selectionchange" event on deselect', function (done) {
+            ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+                transportMap.stations.events.add('selectionchange', function (e) {
+                    expect(e.get('type')).to.equal('deselect');
+                    done();
+                });
+                transportMap.stations.deselect([4]);
+            }).done();
+        });
         it('should implement getSelection', function () {
             var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
 
