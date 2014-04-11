@@ -105,6 +105,8 @@ ymaps.ready(function () {
             ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
                 transportMap.events.add('shadechange', function (e) {
                     expect(e.get('type')).to.equal('shade');
+
+                    transportMap.destroy();
                     done();
                 });
                 transportMap.shade();
@@ -114,9 +116,37 @@ ymaps.ready(function () {
             ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
                 transportMap.events.add('shadechange', function (e) {
                     expect(e.get('type')).to.equal('unshade');
+
+                    transportMap.destroy();
                     done();
                 });
                 transportMap.unshade();
+            }).done();
+        });
+        it('should fire "boundschange" on center change', function (done) {
+            var newCenter = [0.1, 0.1];
+
+            ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+                transportMap.events.add('boundschange', function (e) {
+                    expect(e.get('newCenter')).to.deep.equal(newCenter);
+
+                    transportMap.destroy();
+                    done();
+                });
+                transportMap.setCenter(newCenter);
+            }).done();
+        });
+        it('should fire "boundschange" on zoom change', function (done) {
+            var newZoom = 3;
+
+            ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+                transportMap.events.add('boundschange', function (e) {
+                    expect(e.get('newZoom')).to.deep.equal(newZoom);
+
+                    transportMap.destroy();
+                    done();
+                });
+                transportMap.setZoom(newZoom);
             }).done();
         });
         it('should accept selection property', function () {
@@ -272,6 +302,7 @@ ymaps.ready(function () {
             });
         });
     });
+
     describe('Station instance', function () {
         it('should have "code" property', function () {
             var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
@@ -338,6 +369,10 @@ ymaps.ready(function () {
         transportMap.stations.select([1, 2, 3, 4, 182]);
         transportMap.stations.getSelection();
         transportMap.stations.deselect([182]);
+
+        transportMap.events.add('boundschange', function () {
+            console.log('boundschange');
+        });
     }).done();
 
     if (window.mochaPhantomJS) {

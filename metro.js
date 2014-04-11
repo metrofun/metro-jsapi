@@ -7,6 +7,8 @@ ymaps.ready(function () {
      * through the 'createTransportMap' factory.
      * TransportMap creates a map and inserts SchemeLayer into it.
      *
+     * Has an EventManager, which is a parent for all Events on maps & stations
+     *
      * Exposes "StationCollection" via "stations" property
      *
      *
@@ -98,13 +100,14 @@ ymaps.ready(function () {
             }
             this._map.layers.add(new SchemeLayer(this._schemeView));
 
-            // Event manager added
-            this.events = new ymaps.event.Manager();
-
             this.stations = new StationCollection(this._schemeView, this._map);
-            // event bubbling
-            this.stations.events.setParent(this.events);
             this.stations.select(this._state.selection);
+
+            // Event manager added
+            // Enable event bubbling
+            this.events = new ymaps.event.Manager();
+            this._map.events.setParent(this.events);
+            this.stations.events.setParent(this.events);
 
             return this;
         },
