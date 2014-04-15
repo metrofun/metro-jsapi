@@ -221,6 +221,19 @@ ymaps.ready(function () {
     });
 
     describe('StationCollection instance', function () {
+        it('should implement "search"', function (done) {
+            ymaps.createTransportMap('kiev', mapContainer, {
+            }).then(function (transportMap) {
+                expect(transportMap.stations).respondTo('search');
+                transportMap.stations.search('пло').then(function (stations) {
+                    expect(stations).to.be.an('array');
+                    expect(stations.length).to.equal(2);
+
+                    transportMap.destroy();
+                    done();
+                });
+            });
+        });
         it('should have an EventManager', function () {
             return ymaps.createTransportMap('moscow', mapContainer, {
             }).then(function (transportMap) {
@@ -234,6 +247,8 @@ ymaps.ready(function () {
             ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
                 transportMap.stations.events.add('selectionchange', function (e) {
                     expect(e.get('type')).to.equal('select');
+
+                    transportMap.destroy();
                     done();
                 });
                 transportMap.stations.select([1]);
@@ -244,6 +259,8 @@ ymaps.ready(function () {
                 transportMap.stations.events.add('selectionchange', function (e) {
                     console.log();
                     expect(e.get('type')).to.equal('deselect');
+
+                    transportMap.destroy();
                     done();
                 });
                 transportMap.stations.deselect([4]);
@@ -283,10 +300,11 @@ ymaps.ready(function () {
 
                 transportMap.stations.deselect(deselection);
                 expect(transportMap.stations.getSelection()).to.not.have.members(deselection);
+
                 transportMap.destroy();
             });
         });
-        it('should implement each', function () {
+        it('should implement "each"', function () {
             var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
 
             return ymaps.createTransportMap('moscow', mapContainer, {
@@ -297,6 +315,20 @@ ymaps.ready(function () {
                 transportMap.stations.each(function (station) {
                     expect(station).to.be.an('object');
                 });
+
+                transportMap.destroy();
+            });
+        });
+        it('should implement "getIterator"', function () {
+            return ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+                expect(transportMap.stations).to.respondTo('getIterator');
+
+                transportMap.destroy();
+            });
+        });
+        it('should implement "filter"', function () {
+            return ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+                expect(transportMap.stations).to.respondTo('filter');
 
                 transportMap.destroy();
             });

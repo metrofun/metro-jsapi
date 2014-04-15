@@ -100,7 +100,8 @@ ymaps.ready(function () {
             }
             this._map.layers.add(new SchemeLayer(this._schemeView));
 
-            this.stations = new StationCollection(this._schemeView, this._map);
+            this.stations = new StationCollection(this._schemeView);
+            this._map.layers.add(this.stations);
             this.stations.select(this._state.selection);
 
             // Event manager added
@@ -244,14 +245,12 @@ ymaps.ready(function () {
             var ground;
             SchemeLayer.superclass.onAddToMap.call(this, map);
 
-            // TODO implement map.container "sizechange"
             map.events.add('actiontick', function (e) {
                 var tick = e.get('tick');
 
                 this._schemeView.setTranslate(tick.globalPixelCenter);
                 this._schemeView.setScale(SchemeLayer.getScaleFromZoom(tick.zoom));
             }.bind(this));
-
 
             this._schemeView.setBaseSize(SchemeLayer.SQUARE_SIZE, SchemeLayer.SQUARE_SIZE);
             this._schemeView.setTranslate(map.getGlobalPixelCenter());
@@ -444,29 +443,27 @@ ymaps.ready(function () {
      * Has an EventManager, which is a parent for all Stations' EventManagers
      *
      * @constructor
+     * @inherits ymaps.Collection
      *
      * @param {SchemeView} schemeView
      * @param {ymap.Map} ymap
      */
-    function StationCollection(schemeView, ymap) {
+    function StationCollection(schemeView) {
+        StationCollection.superclass.constructor.call(this);
+
         var code, metadata = schemeView.getMetaData().stations, station;
 
         this._stationsMap = {};
-        this._stations = [];
-
-
-        // Event manager added
-        this.events = new ymaps.event.Manager();
 
         for (code in metadata) {
-            station = new Station(metadata[code], schemeView, ymap);
+            station = new Station(metadata[code], schemeView);
             // event bubbling
-            station.events.setParent(this.events);
             this._stationsMap[code] = station;
-            this._stations.push(station);
+            this.add(station);
+            station.events.setParent(this.events);
         }
     }
-    StationCollection.prototype = {
+    ymaps.util.augment(StationCollection, ymaps.Collection, {
         /**
          * Selects  stations by cods
          *
@@ -505,13 +502,21 @@ ymaps.ready(function () {
         getByCode: function (code) {
             return this._stationsMap[code];
         },
-        each: function (callback, ctx) {
-            this._stations.forEach(function (station) {
-                callback.call(ctx || station, station);
-            });
+        /**
+         * Search stations by words starting with the letters "request"
+         *
+         * @param {String} request
+         *
+         * @returns {ymaps.vow.Promise} Resolves to an array of stations
+         */
+        search: function (request) {
+            return new ymaps.vow.fulfill(this.filter(function (station) {
+                return station.title.split(' ').some(function (token) {
+                    return token.substr(0, request.length) === request;
+                });
+            }));
         }
-    };
-
+    });
     /**
      * Station instance
      * Is exposed via StationCollection#each
@@ -521,29 +526,34 @@ ymaps.ready(function () {
      * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/GeoObject.xml#events-summary
      *
      * @constructor
+     * @inherits ymaps.Collection.Item
      *
      * @param {Object} metadata Metadata for the station
      * @param {SchemeView} SchemeView
      * @param {ymap.Map} ymap
      */
-    function Station(metadata, schemeView, ymap) {
+    function Station(metadata, schemeView, options) {
+        Station.superclass.constructor.call(this, options);
+
         this.code = metadata.labelId;
         this.title = metadata.name;
         this._schemeView = schemeView;
-        this._ymap = ymap;
         this.selected = false;
-
-        // Event manager added
-        this.events = new ymaps.event.Manager();
-
-        this._getGeoObjects().forEach(function (geoObject) {
-            // event bubbling
-            geoObject.events.setParent(this.events);
-        }, this);
 
         this.events.add('click', this._onClick, this);
     }
-    Station.prototype = {
+    ymaps.util.augment(Station, ymaps.collection.Item, {
+        /**
+         * @override ymaps.collection.Item
+         */
+        onAddToMap: function () {
+            Station.superclass.onAddToMap.apply(this, arguments);
+
+            this._getGeoObjects().forEach(function (geoObject) {
+                // event bubbling
+                geoObject.events.setParent(this.events);
+            }, this);
+        },
         _onClick: function () {
             //toggle select
             this[this.selected ? 'deselect':'select']();
@@ -578,7 +588,7 @@ ymaps.ready(function () {
                 {},
                 {fill: true, opacity: 0}
             );
-            this._ymap.geoObjects.add(rectangle);
+            this.getMap().geoObjects.add(rectangle);
             return rectangle;
         },
         _getGeoObjects: function () {
@@ -596,7 +606,7 @@ ymaps.ready(function () {
         },
         _getGeoBBox: function (svgNode) {
             var globalBBox = svgNode.getBBox(),
-                projection = this._ymap.options.get('projection'),
+                projection = this.getMap().options.get('projection'),
                 schemeMeta = this._schemeView.getMetaData(),
                 center = {x: schemeMeta.width / 2, y: schemeMeta.height / 2},
                 baseZoom = - SchemeLayer.getZoomFromScale(this._schemeView.getBaseScale()),
@@ -621,5 +631,5 @@ ymaps.ready(function () {
         getLabelNode: function () {
             return this._schemeView.getNode().getElementById('label-' + this.code);
         }
-    };
+    });
 });
