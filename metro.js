@@ -52,9 +52,6 @@ ymaps.ready(function () {
             this._state.zoom = SchemeLayer.getFitZoom(this._container);
         }
 
-        // Event manager added
-        this.events = new ymaps.event.Manager();
-
         //NOTE promise is returned from constructor
         return this._loadScheme().then(
             this._onSchemeLoad.bind(this),
@@ -103,18 +100,21 @@ ymaps.ready(function () {
         _onSchemeLoad: function (node) {
             this._schemeView = new SchemeView(node);
             this._map = this._createMap();
-            if (this._state.shaded) {
-                this.shade();
-            }
             this._map.layers.add(new SchemeLayer(this._schemeView));
 
             this.stations = new StationCollection(this._schemeView);
             this._map.layers.add(this.stations);
             this.stations.select(this._state.selection);
 
+            // Event manager added
+            this.events = new ymaps.event.Manager();
             // Enable event bubbling
             this._map.events.setParent(this.events);
             this.stations.events.setParent(this.events);
+
+            if (this._state.shaded) {
+                this.shade();
+            }
 
             return this;
         },
