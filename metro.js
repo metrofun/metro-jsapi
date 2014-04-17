@@ -23,14 +23,16 @@ ymaps.ready(function () {
      * @param {Boolean} [state.shaded] Boolean flag to shade or not a map
      * @param {Array<Number>} [state.selection] List of selected station codes
      * @param {Object} [options]
-     * @param {Number} [options.maxZoom]
-     * @param {Number} [options.minZoom]
-     * @param {String} [options.path] A path to the metro-data
+     * @param {Number} [options.maxZoom = 3]
+     * @param {Number} [options.minZoom = 0]
+     * @param {Number} [options.lang = 'ru']
+     * @param {String} [options.path = 'node_modules/metro-data/'] A path to the metro-data
      */
     function TransportMap(city, container, state, options) {
         this._schemeId = this._schemeIdByCity[city];
 
         this._options = ymaps.util.extend({
+            lang: 'ru',
             path: 'node_modules/metro-data/',
             minZoom: 0,
             maxZoom: 3
@@ -49,6 +51,9 @@ ymaps.ready(function () {
         if (!this._state.hasOwnProperty('zoom')) {
             this._state.zoom = SchemeLayer.getFitZoom(this._container);
         }
+
+        // Event manager added
+        this.events = new ymaps.event.Manager();
 
         //NOTE promise is returned from constructor
         return this._loadScheme().then(
@@ -87,7 +92,10 @@ ymaps.ready(function () {
                 deferred.reject(e);
             };
             //FIXME russian is hardcoded
-            xhr.open('GET', this._options.path + this._schemeId + '.ru.svg', true);
+            xhr.open('GET', [
+                this._options.path,
+                this._schemeId, '.', this._options.lang, '.svg'
+            ].join(''), true);
             xhr.send(null);
 
             return deferred.promise();
@@ -104,9 +112,7 @@ ymaps.ready(function () {
             this._map.layers.add(this.stations);
             this.stations.select(this._state.selection);
 
-            // Event manager added
             // Enable event bubbling
-            this.events = new ymaps.event.Manager();
             this._map.events.setParent(this.events);
             this.stations.events.setParent(this.events);
 

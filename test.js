@@ -397,7 +397,7 @@ ymaps.ready(function () {
     });
 
     //Example map
-    ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+    ymaps.createTransportMap('moscow', mapContainer, {shaded: true}).then(function (transportMap) {
         transportMap.stations.select([1, 2, 3, 4, 182]);
         transportMap.stations.getSelection();
         transportMap.stations.deselect([182]);
