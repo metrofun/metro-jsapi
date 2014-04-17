@@ -34,6 +34,15 @@ ymaps.ready(function () {
                 transportMap2.destroy();
             });
         });
+        it('should expose ymap instance', function () {
+            return ymaps.createTransportMap('kiev', 'mapContainer', {
+            }).then(function (transportMap) {
+                expect(transportMap).to.respondTo('getMap');
+                expect(transportMap.getMap()).to.be.instanceOf(ymaps.Map);
+                transportMap.destroy();
+            });
+        });
+
         it('should accept container id', function () {
             return ymaps.createTransportMap('moscow', 'mapContainer', {
             }).then(function (transportMap) {
@@ -397,7 +406,7 @@ ymaps.ready(function () {
     });
 
     //Example map
-    ymaps.createTransportMap('moscow', mapContainer, {shaded: true}).then(function (transportMap) {
+    ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
         transportMap.stations.select([1, 2, 3, 4, 182]);
         transportMap.stations.getSelection();
         transportMap.stations.deselect([182]);

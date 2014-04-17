@@ -217,6 +217,15 @@ ymaps.ready(function () {
             kharkov: 9,
             minsk: 13
         },
+        /**
+         * Get current map instance.
+         * Can be used for adding controls
+         *
+         * @returns ymaps.Map
+         */
+        getMap: function () {
+            return this._map;
+        },
         destroy: function () {
             this._map.destroy();
         }
