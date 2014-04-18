@@ -265,8 +265,8 @@ ymaps.ready(function () {
         });
         it('should fire "selectionchange" event on deselect', function (done) {
             ymaps.createTransportMap('moscow', mapContainer).then(function (transportMap) {
+                transportMap.stations.select([4]);
                 transportMap.stations.events.add('selectionchange', function (e) {
-                    console.log();
                     expect(e.get('type')).to.equal('deselect');
 
                     transportMap.destroy();

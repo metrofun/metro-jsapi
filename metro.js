@@ -555,7 +555,10 @@ ymaps.ready(function () {
         this._schemeView = schemeView;
         this.selected = false;
 
-        this.events.add('click', this._onClick, this);
+        this.events.add('click', function () {
+            //toggle select
+            this[this.selected ? 'deselect':'select']();
+        }, this);
     }
     ymaps.util.augment(Station, ymaps.collection.Item, {
         /**
@@ -569,33 +572,72 @@ ymaps.ready(function () {
                 geoObject.events.setParent(this.events);
             }, this);
         },
-        _onClick: function () {
-            //toggle select
-            this[this.selected ? 'deselect':'select']();
+        /**
+         * Non-cacheble getter for label node.
+         * Too many labels on the map to cache them all
+         *
+         * @returns {HTMLElement}
+         */
+        getLabelNode: function () {
+            return this._schemeView.getNode().getElementById('label-' + this.code);
         },
         /**
-         * Selects current station
+         * Selects current station.
+         * If station is already selected - nothing happens
          */
         select: function () {
-            var rectNode = this.getLabelNode().getElementsByTagName('rect')[0];
+            var rectNode;
+            if (!this.selected) {
+                rectNode = this.getLabelNode().getElementsByTagName('rect')[0];
 
-            this.selected = true;
-            rectNode.style.stroke = '#bbb';
-            rectNode.style.opacity = 1;
+                this.selected = true;
+                rectNode.style.stroke = '#bbb';
+                rectNode.style.opacity = 1;
 
-            this.events.fire('selectionchange', {type: 'select', target: this});
+                // make nodes non-shadable
+                this._appendTo('highlight-layer-stations', this._getStationNodes());
+                this._appendTo('highlight-layer-labels', this.getLabelNode());
+
+                this.events.fire('selectionchange', {type: 'select', target: this});
+            }
         },
         /**
          * Deselects current station
+         * If station is not selected - nothing happens
          */
         deselect: function () {
-            var rectNode = this.getLabelNode().getElementsByTagName('rect')[0];
+            var rectNode;
+            if (this.selected) {
+                rectNode = this.getLabelNode().getElementsByTagName('rect')[0];
 
-            this.selected = false;
-            rectNode.style.stroke = '';
-            rectNode.style.opacity = '';
+                this.selected = false;
+                rectNode.style.stroke = '';
+                rectNode.style.opacity = '';
 
-            this.events.fire('selectionchange', {type: 'deselect', target: this});
+                this._appendTo('scheme-layer-stations', this._getStationNodes());
+                this._appendTo('scheme-layer-labels', this.getLabelNode());
+
+                this.events.fire('selectionchange', {type: 'deselect', target: this});
+            }
+        },
+        _appendTo: function (id, elements) {
+            var parentNode = this._schemeView.getNode().getElementById(id);
+
+            [].concat(elements).forEach(function (element) {
+                parentNode.appendChild(element);
+            });
+        },
+        _getGeoObjects: function () {
+            var svgNodes = [this.getLabelNode()].concat(this._getStationNodes());
+
+            return svgNodes.map(this._createGeoObject, this);
+        },
+        _getStationNodes: function () {
+            var labelMeta = this._schemeView.getMetaData().labels[this.code];
+
+            return labelMeta.stationIds.map(function (id) {
+                return this._schemeView.getNode().getElementById('station-' + id);
+            }, this);
         },
         _createGeoObject: function (svgNode) {
             var rectangle = new ymaps.Rectangle(
@@ -605,19 +647,6 @@ ymaps.ready(function () {
             );
             this.getMap().geoObjects.add(rectangle);
             return rectangle;
-        },
-        _getGeoObjects: function () {
-            if (!this._geoObjects) {
-                var svgNodes = [this.getLabelNode()],
-                labelMeta = this._schemeView.getMetaData().labels[this.code];
-
-                svgNodes = svgNodes.concat(labelMeta.stationIds.map(function (id) {
-                    return this._schemeView.getNode().getElementById('station-' + id);
-                }, this));
-
-                this._geoObjects = svgNodes.map(this._createGeoObject, this);
-            }
-            return this._geoObjects;
         },
         _getGeoBBox: function (svgNode) {
             var globalBBox = svgNode.getBBox(),
@@ -636,15 +665,6 @@ ymaps.ready(function () {
                 ], baseZoom);
 
             return [topLeftPoint, bottomRightPoint];
-        },
-        /**
-         * Non-cacheble getter for label node.
-         * Too many labels on the map to cache them all
-         *
-         * @returns {HTMLElement}
-         */
-        getLabelNode: function () {
-            return this._schemeView.getNode().getElementById('label-' + this.code);
         }
     });
 });
