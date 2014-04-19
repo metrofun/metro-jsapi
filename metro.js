@@ -7,10 +7,9 @@ ymaps.ready(function () {
      * through the 'createTransportMap' factory.
      * TransportMap creates a map and inserts SchemeLayer into it.
      *
-     * Has an EventManager, which is a parent for all Events on maps & stations
+     * Has an EventManager, which is a parent for all Events on the map & stations
      *
      * Exposes "StationCollection" via "stations" property
-     *
      *
      * Note: constructor returns a promise, not an instanceof TransportMap
      *
@@ -65,8 +64,6 @@ ymaps.ready(function () {
          * Loads an svg scheme
          * and returns promise that provides an SVGElement
          *
-         * TODO implement i18n
-         *
          * @returns {ymaps.vow.Promise}
          */
         _loadScheme: function () {
@@ -88,7 +85,6 @@ ymaps.ready(function () {
             xhr.onerror = function (e) {
                 deferred.reject(e);
             };
-            //FIXME russian is hardcoded
             xhr.open('GET', [
                 this._options.path,
                 this._schemeId, '.', this._options.lang, '.svg'
@@ -147,21 +143,21 @@ ymaps.ready(function () {
             return map;
         },
         /**
-         * Fades in the map without animation
+         * Fades in the map without an animation
          */
         shade: function () {
             this._schemeView.fadeIn();
             this.events.fire('shadechange', {type: 'shade', target: this});
         },
         /**
-         * Fades out the map without animation
+         * Fades out the map without an animation
          */
         unshade: function () {
             this._schemeView.fadeOut();
             this.events.fire('shadechange', {type: 'unshade', target: this});
         },
         /**
-         * Returns coordinates of center in abstract scheme coordinates
+         * Returns coordinates of a center in abstract scheme coordinates
          *
          * @returns {Array<Number>}
          */
@@ -252,7 +248,7 @@ ymaps.ready(function () {
     }
     ymaps.util.augment(SchemeLayer, ymaps.collection.Item, {
         /**
-         * Init function. Sets everything when layer is added to the map
+         * Init function. Sets everything when a layer is added to the map
          *
          * @override ymaps.collection.Item
          */
@@ -289,7 +285,8 @@ ymaps.ready(function () {
         }
     });
     /**
-     * Calculates zoom to fit layer into the container
+     * Calculates zoom to fit the layer into the container
+     *
      * @param {HTMLElement} containerNode
      *
      * @returns {Number}
@@ -330,7 +327,7 @@ ymaps.ready(function () {
     /**
      * View on a scheme image.
      * Responsible for moving and scaling.
-     * Contains meta data  from a scheme
+     * Contains a meta data from a scheme
      *
      * @constructor
      *
@@ -367,7 +364,7 @@ ymaps.ready(function () {
          * For example SchemeLayer is 256x256 by default
          * and moscow svg image is 1080x1040,
          * therefore SchemeLayer need to set a base size
-         * ti simplify further scaling
+         * to simplify further scaling
          *
          * @param {Number} width
          * @param {Number} height
@@ -404,6 +401,8 @@ ymaps.ready(function () {
             }, this);
         },
         /**
+         * TODO give a link to a public doc about MetaData format
+         *
          * @returns {Object}
          */
         getMetaData: function () {
@@ -506,7 +505,6 @@ ymaps.ready(function () {
          */
         getSelection: function () {
             var codes = [];
-            // this.stations instanceof StationCollection
             this.each(function (station) {
                 if (station.selected) {
                     codes.push(station.code);
@@ -518,7 +516,7 @@ ymaps.ready(function () {
             return this._stationsMap[code];
         },
         /**
-         * Search stations by words starting with the letters "request"
+         * Search stations by words starting with the letters %request%
          *
          * @param {String} request
          *
@@ -536,7 +534,7 @@ ymaps.ready(function () {
      * Station instance
      * Is exposed via StationCollection#each
      *
-     * Has an Event Manager, that fires custom event "selectionchange"
+     * Has an Event Manager, that fires a custom event "selectionchange"
      * For more events please see
      * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/GeoObject.xml#events-summary
      *
@@ -583,6 +581,7 @@ ymaps.ready(function () {
         },
         /**
          * Selects current station.
+         * Fires 'selectionchange' event
          * If station is already selected - nothing happens
          */
         select: function () {
@@ -602,7 +601,8 @@ ymaps.ready(function () {
             }
         },
         /**
-         * Deselects current station
+         * Deselects current station.
+         * Fires 'selectionchange' event
          * If station is not selected - nothing happens
          */
         deselect: function () {
