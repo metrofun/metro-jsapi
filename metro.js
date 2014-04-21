@@ -16,7 +16,7 @@ ymaps.ready(function () {
      * @constructor
      *
      * @param {String} city (e.g. 'minsk', 'moscow')
-     * @param {Element} container
+     * @param {String|Element} container
      * @param {Object} [state]
      * @param {Array<Number>} [state.center] geo point
      * @param {Boolean} [state.shaded] Boolean flag to shade or not a map
@@ -479,7 +479,7 @@ ymaps.ready(function () {
     }
     ymaps.util.augment(StationCollection, ymaps.Collection, {
         /**
-         * Selects  stations by cods
+         * Selects stations by codes
          *
          * @param {Array<Number>|Number} codes
          */
@@ -539,7 +539,7 @@ ymaps.ready(function () {
      * @see http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/GeoObject.xml#events-summary
      *
      * @constructor
-     * @inherits ymaps.Collection.Item
+     * @inherits ymaps.collection.Item
      *
      * @param {Object} metadata Metadata for the station
      * @param {SchemeView} SchemeView
