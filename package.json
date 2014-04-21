@@ -1,0 +1,27 @@
+{
+  "name": "metro-jsapi",
+  "version": "0.0.0",
+  "description": "",
+  "main": "metro.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha-phantomjs -s webSecurityEnabled=false test.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ymaps/metro-jsapi.git"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/ymaps/metro-jsapi/issues"
+  },
+  "dependencies": {
+    "metro-data": "git://github.com/ymaps/metro-data.git"
+  },
+  "devDependencies": {
+    "mocha": "~1.18.2",
+    "chai": "~1.9.1",
+    "mocha-phantomjs": "~3.3.2",
+    "es5-shim": "~2.3.0"
+  }
+}
