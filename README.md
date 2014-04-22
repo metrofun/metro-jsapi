@@ -17,8 +17,7 @@ npm install -g phantomjs
 Quick start
 ---------
 ###Step 1. Enable the API
-Before using the API features, you must make sure your browser loads the all required modules from Yandex.Maps API
-and MetroJS API source:
+Before using the API features, you must make sure your browser loads all required modules from Yandex.Maps API. Note, metro-jsapi requires Yandex.Maps version 2.1 or higher.
 
 ```html
 <head>
@@ -139,6 +138,12 @@ Private class. Inherits [collection.Item].
 
 ####Fields
 See [inherited fields](http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/collection.Item.xml#properties-summary).
+
+Name | Type | Description
+--- | --- | ---
+code | Number | Station code number
+title | String | Station name
+
 ####Events
 All [inherited events](http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/collection.Item.xml#events-summary) and some additionals:
 
