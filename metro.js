@@ -45,7 +45,8 @@ ymaps.ready(function () {
         if (typeof container === 'string') {
             this._container = document.getElementById(container);
         } else {
-            this._container = container;
+            // support jQuery
+            this._container = container[0] || container;
         }
         if (!this._state.hasOwnProperty('zoom')) {
             this._state.zoom = SchemeLayer.getFitZoom(this._container);
