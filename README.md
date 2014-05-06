@@ -23,7 +23,7 @@ Before using the API features, you must make sure your browser loads all require
 <head>
     ...
     <!-- please note ymaps version is 2.1.5 -->
-    <script src="http://api-maps.yandex.ru/2.1.5/?load=util.extend,util.augment,vow,event.Manager,Map,rojection.Cartesian,collection.Item,Collection,Rectangle&lang=en-US" type="text/javascript"></script>
+    <script src="http://api-maps.yandex.ru/2.1.5/?load=util.extend,util.augment,vow,event.Manager,Map,rojection.Cartesian,collection.Item,Collection,Rectangle,geocode&lang=en-US" type="text/javascript"></script>
     <script src="/metro.js" type="text/javascript"></script>
     ...
 </head>
@@ -158,6 +158,7 @@ Name | Returns | Description
 getLabelNode() | SVGElement | Non-cacheble getter for the label node.
 select() | | Selects current station. Fires 'selectionchange' event.
 deselect() | | Deselects current station. Fires 'selectionchange' event.
+getCoordinates() | [Vow].Promise | Retrieves a pair of world geo coordinates
 
 
 Running Tests

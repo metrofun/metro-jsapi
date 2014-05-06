@@ -649,6 +649,27 @@ ymaps.ready(function () {
             this.getMap().geoObjects.add(rectangle);
             return rectangle;
         },
+        /*
+         * Returns real world geo cootdinates for the current station
+
+         * @returns {Vow.Promise} resolves to a pair of coordinates
+         */
+        getCoordinates: function () {
+            //first get city bounds
+            return ymaps.geocode(
+                this._schemeView.getMetaData().name,
+                {results: 1, kind: 'locality'}
+            ).then(function (res) {
+                //search metro station inside city bounds
+                return ymaps.geocode(this.title, {
+                    results: 1,
+                    kind: 'metro',
+                    boundedBy: res.geoObjects.get(0).geometry.getBounds()
+                }).then(function (res) {
+                    return res.geoObjects.get(0).geometry.getCoordinates();
+                });
+            }.bind(this));
+        },
         _getGeoBBox: function (svgNode) {
             var globalBBox = svgNode.getBBox(),
                 projection = this.getMap().options.get('projection'),

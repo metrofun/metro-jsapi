@@ -371,6 +371,35 @@ ymaps.ready(function () {
                 transportMap.destroy();
             });
         });
+        it('should implement "getCoordinates"', function () {
+            return ymaps.createTransportMap('moscow', mapContainer, {
+            }).then(function (transportMap) {
+                expect(transportMap.stations.get(0)).to.respondTo('getCoordinates');
+                expect(transportMap.stations.get(0).getCoordinates()).to.be.an.instanceof(ymaps.vow.Promise);
+
+                transportMap.destroy();
+            });
+        });
+        it('"getCoordinates" should respect current city', function () {
+            return ymaps.vow.all([
+                ymaps.createTransportMap('kharkov', mapContainer),
+                ymaps.createTransportMap('moscow', mapContainer)
+            ]).spread(function (transportMap1, transportMap2) {
+                return ymaps.vow.all([
+                    transportMap1.stations.search('Ботанический'),
+                    transportMap2.stations.search('Ботанический'),
+                ]).spread(function (stations1, stations2) {
+                    return ymaps.vow.all([
+                        stations1[0].getCoordinates(),
+                        stations2[0].getCoordinates()
+                    ]).spread(function (coord1, coord2) {
+                        expect(coord1).to.not.deep.equal(coord2);
+                        transportMap1.destroy();
+                        transportMap2.destroy();
+                    });
+                });
+            });
+        });
     });
 
     // Utils
