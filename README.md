@@ -129,9 +129,9 @@ All [inherited methods](http://api.yandex.ru/maps/doc/jsapi/beta/ref/reference/C
 Name | Returns | Description
 --- | --- | ---
 select(codes) | |  Selects stations by codes
-deselect(codes) | |  Deselects stations
+deselect(codes) | |  Deselects stations. Without arguments deselects all
 getSelection | Number[] | Returns codes of all selected stations
-getByCode(code) | **Station** | Returns **Station** instance by its code number.
+getByCode(code) | **Station** | Returns **Station** instance by its code number
 search(request) | [Vow].Promise | Search stations by words starting with the letters %request%. And returns promise with matches
 ###Station
 Private class. Inherits [collection.Item].

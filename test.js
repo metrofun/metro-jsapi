@@ -313,6 +313,17 @@ ymaps.ready(function () {
                 transportMap.destroy();
             });
         });
+        it('"deselect" without arguments deselects all', function () {
+            return ymaps.createTransportMap('moscow', mapContainer, {
+                selection: randomUniqueDecimals(1, 10, 1, 10)
+            }).then(function (transportMap) {
+                transportMap.stations.deselect();
+                expect(transportMap.stations.getSelection()).to.be.empty;
+
+                transportMap.destroy();
+            });
+        });
+
         it('should implement "each"', function () {
             var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
 
@@ -345,6 +356,7 @@ ymaps.ready(function () {
     });
 
     describe('Station instance', function () {
+        this.timeout(3000);
         it('should have "code" property', function () {
             var initialSelection = randomUniqueDecimals(1, 10, 1, 10);
 
@@ -392,11 +404,11 @@ ymaps.ready(function () {
                     return ymaps.vow.all([
                         stations1[0].getCoordinates(),
                         stations2[0].getCoordinates()
-                    ]).spread(function (coord1, coord2) {
-                        expect(coord1).to.not.deep.equal(coord2);
-                        transportMap1.destroy();
-                        transportMap2.destroy();
-                    });
+                    ])
+                }).spread(function (coord1, coord2) {
+                    expect(coord1).to.not.deep.equal(coord2);
+                    transportMap1.destroy();
+                    transportMap2.destroy();
                 });
             });
         });

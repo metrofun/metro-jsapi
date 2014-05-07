@@ -492,9 +492,10 @@ ymaps.ready(function () {
         /**
          * Deselects stations
          *
-         * @param {Array<Number>|Number} codes
+         * @param {Array<Number>|Number} [codes] By default all selected
          */
         deselect: function (codes) {
+            codes = codes || this.getSelection();
             [].concat(codes).forEach(function (code) {
                 this.getByCode(code).deselect();
             }, this);
