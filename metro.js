@@ -53,12 +53,11 @@ ymaps.ready(function () {
         }
 
         //NOTE promise is returned from constructor
-        return this._loadScheme().then(
-            this._onSchemeLoad.bind(this),
-            function (e) {
+        return this._loadScheme()
+            .then(this._onSchemeLoad.bind(this))
+            .fail(function (e) {
                 setTimeout(function () {throw e; });
-            }
-        );
+            });
     }
     TransportMap.prototype = {
         /**
@@ -95,28 +94,31 @@ ymaps.ready(function () {
             return deferred.promise();
         },
         _onSchemeLoad: function (node) {
-            this._schemeView = new SchemeView(node);
-            this._map = this._createMap();
-            this._map.layers.add(new SchemeLayer(this._schemeView));
+            return this._createMap().then(function (map) {
+                this._map = map;
+                this._schemeView = new SchemeView(node);
+                this._map.layers.add(new SchemeLayer(this._schemeView));
 
-            this.stations = new StationCollection(this._schemeView);
-            this._map.layers.add(this.stations);
-            this.stations.select(this._state.selection);
+                this.stations = new StationCollection(this._schemeView);
+                this._map.layers.add(this.stations);
+                this.stations.select(this._state.selection);
 
-            // Event manager added
-            this.events = new ymaps.event.Manager();
-            // Enable event bubbling
-            this._map.events.setParent(this.events);
-            this.stations.events.setParent(this.events);
+                // Event manager added
+                this.events = new ymaps.event.Manager();
+                // Enable event bubbling
+                this._map.events.setParent(this.events);
+                this.stations.events.setParent(this.events);
 
-            if (this._state.shaded) {
-                this.shade();
-            }
+                if (this._state.shaded) {
+                    this.shade();
+                }
 
-            return this;
+                return this;
+            }.bind(this));
         },
         _createMap: function () {
-            var SQUARE_SIZE = 1, map;
+            var SQUARE_SIZE = 1, map,
+                deferred = new ymaps.vow.Deferred();
 
             map = new ymaps.Map(
                 this._container,
@@ -141,7 +143,19 @@ ymaps.ready(function () {
                     ])
                 }
             );
-            return map;
+
+            if (this._container.clientWidth && this._container.clientHeight) {
+                deferred.resolve(map);
+            } else {
+                map.events.once('sizechange', function () {
+                    if (!Number.isFinite(this._state.zoom)) {
+                        map.setZoom(SchemeLayer.getFitZoom(this._container));
+                    }
+                    deferred.resolve(map);
+                }.bind(this));
+            }
+
+            return deferred.promise();
         },
         /**
          * Fades in the map without an animation
